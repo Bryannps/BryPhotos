@@ -8,7 +8,7 @@ export default function SharedHeader() {
 
   function handleLogout() {
     logout();
-    navigate('/');
+    navigate("/");
   }
 
   return (
@@ -38,7 +38,7 @@ export default function SharedHeader() {
           Galeria
         </Link>
         {isAuthenticated ? (
-          <button 
+          <button
             onClick={handleLogout}
             className="text-gray-700 hover:text-red-600 transition-all duration-300 hover:scale-110 font-medium"
           >

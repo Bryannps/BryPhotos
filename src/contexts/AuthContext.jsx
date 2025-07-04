@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect } from "react";
 
 const AuthContext = createContext();
 
@@ -7,8 +7,8 @@ export function AuthProvider({ children }) {
 
   // Recarrega estado do localStorage ao abrir a aba
   useEffect(() => {
-    const storedAuth = localStorage.getItem('isAuthenticated');
-    if (storedAuth === 'true') {
+    const storedAuth = localStorage.getItem("isAuthenticated");
+    if (storedAuth === "true") {
       setIsAuthenticated(true);
     }
   }, []);
@@ -16,13 +16,13 @@ export function AuthProvider({ children }) {
   // Login simulado
   const login = () => {
     setIsAuthenticated(true);
-    localStorage.setItem('isAuthenticated', 'true');
+    localStorage.setItem("isAuthenticated", "true");
   };
 
   // Logout
   const logout = () => {
     setIsAuthenticated(false);
-    localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem("isAuthenticated");
   };
 
   return (

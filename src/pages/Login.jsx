@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import SharedHeader from "../components/SharedHeader";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -11,7 +11,7 @@ function LoginForm() {
   function handleSubmit(e) {
     e.preventDefault();
     login(); // login fictício
-    navigate('/gallery'); // redireciona pra galeria
+    navigate("/gallery"); // redireciona pra galeria
   }
 
   return (
@@ -70,7 +70,7 @@ function RegistrationForm() {
   function handleSubmit(e) {
     e.preventDefault();
     login(); // login fictício após cadastro
-    navigate('/gallery'); // redireciona pra galeria
+    navigate("/gallery"); // redireciona pra galeria
   }
 
   return (
@@ -131,6 +131,21 @@ function RegistrationForm() {
 
 export default function Login() {
   const [isRegistering, setIsRegistering] = useState(false);
+  const [searchParams] = useSearchParams();
+  const [showAlert, setShowAlert] = useState(false);
+
+  // Verificar se o usuário foi redirecionado
+  useEffect(() => {
+    if (searchParams.get("redirected") === "true") {
+      setShowAlert(true);
+      // Remover o parâmetro da URL após mostrar o alerta
+      const timer = setTimeout(() => {
+        setShowAlert(false);
+      }, 5000); // Alerta desaparece após 5 segundos
+
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams]);
 
   function toggleForm() {
     setIsRegistering(!isRegistering);
@@ -142,6 +157,33 @@ export default function Login() {
 
       <div className="flex items-center justify-center py-12 px-6">
         <div className="w-full max-w-md mx-auto">
+          {/* Alerta de redirecionamento */}
+          {showAlert && (
+            <div className="mb-6 bg-amber-50 border-l-4 border-amber-400 p-4 rounded-lg shadow-md animate-pulse">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <span className="text-amber-400 text-xl">⚠️</span>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-amber-800">
+                    Você precisa ter uma conta para acessar a galeria!
+                  </p>
+                  <p className="text-xs text-amber-600 mt-1">
+                    Faça login ou crie uma conta para continuar.
+                  </p>
+                </div>
+                <div className="ml-auto">
+                  <button
+                    onClick={() => setShowAlert(false)}
+                    className="text-amber-400 hover:text-amber-600 transition-colors duration-200"
+                  >
+                    <span className="text-lg">✕</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="bg-white/80 backdrop-blur-sm p-8 rounded-3xl shadow-xl hover-lift">
             {/* Logo/Title */}
             <div className="text-center mb-8">
