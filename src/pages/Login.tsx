@@ -5,26 +5,59 @@ import { useAuth } from "../contexts/AuthContext";
 
 // Componente do formulário de Login
 function LoginForm() {
-  const { login } = useAuth();
+  const { login, loading } = useAuth();
   const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+  const [error, setError] = useState("");
 
-  function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    login(); // login fictício
-    navigate("/gallery"); // redireciona pra galeria
+    setError("");
+
+    try {
+      await login(formData);
+      navigate("/gallery");
+    } catch (error: unknown) {
+      console.error("Erro no login:", error);
+
+      const axiosError = error as { response?: { status: number } };
+      if (axiosError.response?.status === 401) {
+        setError("Email ou senha incorretos. Tente novamente.");
+      } else if (axiosError.response?.status === 404) {
+        setError(
+          "Usuário não encontrado. Verifique o email ou crie uma conta."
+        );
+      } else {
+        setError("Erro ao fazer login. Tente novamente.");
+      }
+    }
   }
 
   return (
     <form className="space-y-6" onSubmit={handleSubmit}>
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
+
       <div className="space-y-2">
         <label className="block text-sm font-semibold text-gray-700">
           E-mail
         </label>
         <input
           type="email"
+          value={formData.email}
+          onChange={(e) =>
+            setFormData((prev) => ({ ...prev, email: e.target.value }))
+          }
           className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all duration-300 outline-none"
           placeholder="seu@email.com"
           required
+          disabled={loading}
         />
       </div>
       <div className="space-y-2">
@@ -33,9 +66,14 @@ function LoginForm() {
         </label>
         <input
           type="password"
+          value={formData.password}
+          onChange={(e) =>
+            setFormData((prev) => ({ ...prev, password: e.target.value }))
+          }
           className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all duration-300 outline-none"
           placeholder="••••••••"
           required
+          disabled={loading}
         />
       </div>
 
@@ -54,9 +92,10 @@ function LoginForm() {
 
       <button
         type="submit"
-        className="w-full bg-gradient-secondary text-white py-3 rounded-xl hover-lift font-semibold text-lg transition-all duration-300"
+        disabled={loading}
+        className="w-full bg-gradient-secondary text-white py-3 rounded-xl hover-lift font-semibold text-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        Entrar
+        {loading ? "Entrando..." : "Entrar"}
       </button>
     </form>
   );
@@ -64,26 +103,77 @@ function LoginForm() {
 
 // Componente do formulário de Cadastro
 function RegistrationForm() {
-  const { login } = useAuth();
+  const { register, loading } = useAuth();
   const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [error, setError] = useState("");
 
-  function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    login(); // login fictício após cadastro
-    navigate("/gallery"); // redireciona pra galeria
+    setError("");
+
+    if (formData.password !== formData.confirmPassword) {
+      setError("As senhas não coincidem.");
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setError("A senha deve ter pelo menos 6 caracteres.");
+      return;
+    }
+
+    try {
+      await register({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+      });
+      navigate("/gallery");
+    } catch (error: unknown) {
+      console.error("Erro no registro:", error);
+
+      const axiosError = error as { response?: { status: number } };
+      if (axiosError.response?.status === 409) {
+        setError(
+          "Este email já está cadastrado. Tente fazer login ou use outro email."
+        );
+      } else if (axiosError.response?.status === 400) {
+        setError(
+          "Dados inválidos. Verifique as informações e tente novamente."
+        );
+      } else {
+        setError("Erro ao criar conta. Verifique os dados e tente novamente.");
+      }
+    }
   }
 
   return (
     <form className="space-y-6" onSubmit={handleSubmit}>
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
+
       <div className="space-y-2">
         <label className="block text-sm font-semibold text-gray-700">
           Nome completo
         </label>
         <input
           type="text"
+          value={formData.name}
+          onChange={(e) =>
+            setFormData((prev) => ({ ...prev, name: e.target.value }))
+          }
           className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-300 outline-none"
           placeholder="Seu nome completo"
           required
+          disabled={loading}
         />
       </div>
       <div className="space-y-2">
@@ -92,9 +182,14 @@ function RegistrationForm() {
         </label>
         <input
           type="email"
+          value={formData.email}
+          onChange={(e) =>
+            setFormData((prev) => ({ ...prev, email: e.target.value }))
+          }
           className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-300 outline-none"
           placeholder="seu@email.com"
           required
+          disabled={loading}
         />
       </div>
       <div className="space-y-2">
@@ -103,9 +198,14 @@ function RegistrationForm() {
         </label>
         <input
           type="password"
+          value={formData.password}
+          onChange={(e) =>
+            setFormData((prev) => ({ ...prev, password: e.target.value }))
+          }
           className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-300 outline-none"
           placeholder="••••••••"
           required
+          disabled={loading}
         />
       </div>
       <div className="space-y-2">
@@ -114,16 +214,25 @@ function RegistrationForm() {
         </label>
         <input
           type="password"
+          value={formData.confirmPassword}
+          onChange={(e) =>
+            setFormData((prev) => ({
+              ...prev,
+              confirmPassword: e.target.value,
+            }))
+          }
           className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-300 outline-none"
           placeholder="••••••••"
           required
+          disabled={loading}
         />
       </div>
       <button
         type="submit"
-        className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-xl hover-lift font-semibold text-lg transition-all duration-300"
+        disabled={loading}
+        className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-xl hover-lift font-semibold text-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        Criar Conta
+        {loading ? "Criando conta..." : "Criar Conta"}
       </button>
     </form>
   );

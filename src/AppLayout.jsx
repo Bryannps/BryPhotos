@@ -19,6 +19,11 @@ export default function AppLayout({ children }) {
                 </a>
               </li>
               <li>
+                <a href="/upload" className="hover:text-blue-800 transition">
+                  Upload
+                </a>
+              </li>
+              <li>
                 <a href="/login" className="hover:text-blue-800 transition">
                   Login
                 </a>

@@ -1,47 +1,61 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useState, useEffect, useContext } from "react";
 import { authService } from "../services/authService";
+import type {
+  User,
+  LoginRequest,
+  RegisterRequest,
+} from "../services/authService";
 
-const AuthContext = createContext(null);
+interface AuthContextType {
+  isAuthenticated: boolean;
+  user: User | null;
+  login: (data: LoginRequest) => Promise<void>;
+  register: (data: RegisterRequest) => Promise<void>;
+  logout: () => void;
+  loading: boolean;
+}
 
-export function AuthProvider({ children }) {
+const AuthContext = createContext<AuthContextType | null>(null);
+
+export { AuthContext };
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Verifica token ao inicializar a aplicação
+  // Recarrega estado do localStorage ao abrir a aba
   useEffect(() => {
     const validateToken = async () => {
       const token = localStorage.getItem("token");
+      const storedUser = localStorage.getItem("user");
 
-      console.log("AuthContext: Inicializando, token encontrado:", !!token);
+      console.log("Validando token na inicialização:");
+      console.log("Token encontrado:", !!token);
+      console.log("Usuário encontrado:", !!storedUser);
 
-      if (token) {
+      if (token && storedUser) {
         try {
-          // Valida o token com a API
-          const userData = await authService.me();
-          console.log("AuthContext: Token válido, usuário:", userData);
+          const parsedUser = JSON.parse(storedUser);
 
-          setUser(userData);
+          console.log("Testando validade do token...");
+          // Testa se o token ainda é válido fazendo uma chamada à API
+          await authService.me();
+
+          console.log("Token válido, mantendo login");
+          setUser(parsedUser);
           setIsAuthenticated(true);
-          localStorage.setItem("user", JSON.stringify(userData));
         } catch (error) {
-          console.log(
-            "AuthContext: Token inválido, limpando localStorage:",
-            error
-          );
-
-          // Token inválido, limpa tudo
+          console.log("Token inválido ou expirado, fazendo logout...", error);
+          // Se o token for inválido, limpa o localStorage
           localStorage.removeItem("token");
           localStorage.removeItem("user");
           setUser(null);
           setIsAuthenticated(false);
         }
       } else {
-        console.log("AuthContext: Nenhum token encontrado");
-        setUser(null);
-        setIsAuthenticated(false);
+        console.log("Nenhum token ou usuário encontrado");
       }
-
       setLoading(false);
     };
 
@@ -49,11 +63,12 @@ export function AuthProvider({ children }) {
   }, []);
 
   // Login com API
-  const login = async (data) => {
+  const login = async (data: LoginRequest) => {
     setLoading(true);
     try {
-      console.log("AuthContext: Fazendo login...");
       const response = await authService.login(data);
+
+      console.log("Login bem-sucedido:", response);
 
       localStorage.setItem("token", response.access_token);
       localStorage.setItem("user", JSON.stringify(response.user));
@@ -61,12 +76,10 @@ export function AuthProvider({ children }) {
       setUser(response.user);
       setIsAuthenticated(true);
 
-      console.log(
-        "AuthContext: Login realizado com sucesso, usuário:",
-        response.user
-      );
+      console.log("Token salvo:", response.access_token);
+      console.log("Usuário salvo:", response.user);
     } catch (error) {
-      console.error("AuthContext: Erro no login:", error);
+      console.error("Erro no login:", error);
       throw error;
     } finally {
       setLoading(false);
@@ -74,10 +87,9 @@ export function AuthProvider({ children }) {
   };
 
   // Registro com API
-  const register = async (data) => {
+  const register = async (data: RegisterRequest) => {
     setLoading(true);
     try {
-      console.log("AuthContext: Fazendo registro...");
       const response = await authService.register(data);
 
       localStorage.setItem("token", response.access_token);
@@ -85,13 +97,8 @@ export function AuthProvider({ children }) {
 
       setUser(response.user);
       setIsAuthenticated(true);
-
-      console.log(
-        "AuthContext: Registro realizado com sucesso, usuário:",
-        response.user
-      );
     } catch (error) {
-      console.error("AuthContext: Erro no registro:", error);
+      console.error("Erro no registro:", error);
       throw error;
     } finally {
       setLoading(false);
@@ -100,7 +107,6 @@ export function AuthProvider({ children }) {
 
   // Logout
   const logout = () => {
-    console.log("AuthContext: Fazendo logout...");
     setIsAuthenticated(false);
     setUser(null);
     localStorage.removeItem("token");
@@ -123,7 +129,7 @@ export function AuthProvider({ children }) {
   );
 }
 
-// Hook personalizado
+// Hook personalizado para usar o contexto
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
