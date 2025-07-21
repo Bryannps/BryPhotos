@@ -7,11 +7,23 @@ import { useAuth } from "../contexts/AuthContext";
 function LoginForm() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    login(); // login fictício
-    navigate("/gallery"); // redireciona pra galeria
+    setError(null);
+    setLoading(true);
+    try {
+      await login(email, password);
+      navigate("/gallery");
+    } catch (err) {
+      setError("E-mail ou senha inválidos");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -24,6 +36,8 @@ function LoginForm() {
           type="email"
           className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all duration-300 outline-none"
           placeholder="seu@email.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           required
         />
       </div>
@@ -35,10 +49,14 @@ function LoginForm() {
           type="password"
           className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all duration-300 outline-none"
           placeholder="••••••••"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
           required
         />
       </div>
-
+      {error && (
+        <div className="text-red-600 text-sm font-semibold">{error}</div>
+      )}
       <div className="flex items-center justify-between text-sm">
         <label className="flex items-center gap-2 text-gray-600">
           <input type="checkbox" className="rounded" />
@@ -51,12 +69,12 @@ function LoginForm() {
           Esqueci a senha
         </a>
       </div>
-
       <button
         type="submit"
         className="w-full bg-gradient-secondary text-white py-3 rounded-xl hover-lift font-semibold text-lg transition-all duration-300"
+        disabled={loading}
       >
-        Entrar
+        {loading ? "Entrando..." : "Entrar"}
       </button>
     </form>
   );

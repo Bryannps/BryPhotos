@@ -1,32 +1,38 @@
 import { createContext, useContext, useState, useEffect } from "react";
+import { loginUser } from "../services/api";
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
+  const [token, setToken] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Recarrega estado do localStorage ao abrir a aba
+  // Carrega token do localStorage ao abrir a aba
   useEffect(() => {
-    const storedAuth = localStorage.getItem("isAuthenticated");
-    if (storedAuth === "true") {
+    const storedToken = localStorage.getItem("access_token");
+    if (storedToken) {
+      setToken(storedToken);
       setIsAuthenticated(true);
     }
   }, []);
 
-  // Login simulado
-  const login = () => {
+  // Login real
+  const login = async (email, password) => {
+    const data = await loginUser(email, password);
+    setToken(data.access_token);
     setIsAuthenticated(true);
-    localStorage.setItem("isAuthenticated", "true");
+    localStorage.setItem("access_token", data.access_token);
   };
 
   // Logout
   const logout = () => {
+    setToken(null);
     setIsAuthenticated(false);
-    localStorage.removeItem("isAuthenticated");
+    localStorage.removeItem("access_token");
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, token, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
