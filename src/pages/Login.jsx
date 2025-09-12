@@ -2,27 +2,26 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import AppLayout from "../AppLayout";
 import { useAuth } from "../contexts/AuthContext";
+import { useApp } from "../contexts/AppContext";
 
 // Componente do formulário de Login
 function LoginForm() {
-  const { login } = useAuth();
+  const { login, loading } = useAuth();
+  const { showError, showSuccess } = useApp();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
+    console.log('Tentando fazer login com:', { email, password: '***' });
     try {
       await login(email, password);
+      showSuccess("Login realizado com sucesso!");
       navigate("/gallery");
     } catch (err) {
-      setError("E-mail ou senha inválidos");
-    } finally {
-      setLoading(false);
+      console.error('Erro no login:', err);
+      showError(err.message || "E-mail ou senha inválidos");
     }
   }
 
@@ -54,9 +53,6 @@ function LoginForm() {
           required
         />
       </div>
-      {error && (
-        <div className="text-red-600 text-sm font-semibold">{error}</div>
-      )}
       <div className="flex items-center justify-between text-sm">
         <label className="flex items-center gap-2 text-gray-600">
           <input type="checkbox" className="rounded" />
@@ -82,13 +78,46 @@ function LoginForm() {
 
 // Componente do formulário de Cadastro
 function RegistrationForm() {
-  const { login } = useAuth();
+  const { register, loading } = useAuth();
+  const { showError, showSuccess } = useApp();
   const navigate = useNavigate();
+  
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: ""
+  });
 
-  function handleSubmit(e) {
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  async function handleSubmit(e) {
     e.preventDefault();
-    login(); // login fictício após cadastro
-    navigate("/gallery"); // redireciona pra galeria
+    
+    // Validar se as senhas coincidem
+    if (formData.password !== formData.confirmPassword) {
+      showError("As senhas não coincidem");
+      return;
+    }
+
+    console.log('Tentando registrar usuário:', { name: formData.name, email: formData.email });
+    try {
+      await register({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password
+      });
+      showSuccess("Conta criada com sucesso! Você pode fazer login agora.");
+      // Não navegar automaticamente, deixar o usuário fazer login
+    } catch (err) {
+      console.error('Erro no registro:', err);
+      showError(err.message || "Erro ao criar conta");
+    }
   }
 
   return (
@@ -99,8 +128,11 @@ function RegistrationForm() {
         </label>
         <input
           type="text"
+          name="name"
           className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-300 outline-none"
           placeholder="Seu nome completo"
+          value={formData.name}
+          onChange={handleChange}
           required
         />
       </div>
@@ -110,8 +142,11 @@ function RegistrationForm() {
         </label>
         <input
           type="email"
+          name="email"
           className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-300 outline-none"
           placeholder="seu@email.com"
+          value={formData.email}
+          onChange={handleChange}
           required
         />
       </div>
@@ -121,8 +156,11 @@ function RegistrationForm() {
         </label>
         <input
           type="password"
+          name="password"
           className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-300 outline-none"
           placeholder="••••••••"
+          value={formData.password}
+          onChange={handleChange}
           required
         />
       </div>
@@ -132,16 +170,20 @@ function RegistrationForm() {
         </label>
         <input
           type="password"
+          name="confirmPassword"
           className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-300 outline-none"
           placeholder="••••••••"
+          value={formData.confirmPassword}
+          onChange={handleChange}
           required
         />
       </div>
       <button
         type="submit"
         className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-xl hover-lift font-semibold text-lg transition-all duration-300"
+        disabled={loading}
       >
-        Criar Conta
+        {loading ? "Criando conta..." : "Criar Conta"}
       </button>
     </form>
   );

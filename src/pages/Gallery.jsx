@@ -1,77 +1,54 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AppLayout from "../AppLayout";
+import { useAuth } from "../contexts/AuthContext";
+import { useApp } from "../contexts/AppContext";
+import { folderService, photoService } from "../services/api";
 
 export default function Gallery() {
-  // Mock das pastas com fotos protegidas
-  const folders = [
-    {
-      id: "1",
-      name: "23/06/2024 - Ensaio João",
-      photos: [
-        {
-          id: "p1",
-          url: "https://images.unsplash.com/photo-1606216794074-735e91aa2c92?w=400&h=300&fit=crop",
-        },
-        {
-          id: "p2",
-          url: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=400&h=300&fit=crop",
-        },
-        {
-          id: "p3",
-          url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop",
-        },
-      ],
-    },
-    {
-      id: "2",
-      name: "Evento Casamento - Aline e Pedro",
-      photos: [
-        {
-          id: "p4",
-          url: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=400&h=300&fit=crop",
-        },
-        {
-          id: "p5",
-          url: "https://images.unsplash.com/photo-1556761175-b413da4baf72?w=400&h=300&fit=crop",
-        },
-      ],
-    },
-    {
-      id: "3",
-      name: "15/05/2024 - Ensaio Família Silva",
-      photos: [
-        {
-          id: "p6",
-          url: "https://images.unsplash.com/photo-1511895426328-dc8714191300?w=400&h=300&fit=crop",
-        },
-        {
-          id: "p7",
-          url: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=400&h=300&fit=crop",
-        },
-        {
-          id: "p8",
-          url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop",
-        },
-        {
-          id: "p9",
-          url: "https://images.unsplash.com/photo-1606216794074-735e91aa2c92?w=400&h=300&fit=crop",
-        },
-      ],
-    },
-  ];
-
-  // Estado que controla qual pasta está sendo visualizada
+  const { isAuthenticated } = useAuth();
+  const { withLoading, showError } = useApp();
+  
+  // Estados para dados reais do backend
+  const [folders, setFolders] = useState([]);
+  const [photos, setPhotos] = useState([]);
   const [selectedFolder, setSelectedFolder] = useState(null);
+
+  // Carregar pastas do backend
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadFolders();
+    }
+  }, [isAuthenticated]);
+
+  const loadFolders = async () => {
+    try {
+      const data = await withLoading(() => folderService.getFolders());
+      setFolders(data);
+    } catch (error) {
+      showError('Erro ao carregar pastas: ' + error.message);
+    }
+  };
+
+  const loadPhotos = async (folderId = null) => {
+    try {
+      const data = await withLoading(() => photoService.getPhotos(folderId));
+      setPhotos(data);
+    } catch (error) {
+      showError('Erro ao carregar fotos: ' + error.message);
+    }
+  };
 
   // Função para selecionar uma pasta
   function handleSelectFolder(folder) {
     setSelectedFolder(folder);
-  }
+    loadPhotos(folder.id);
+  };
 
   // Função para voltar à tela de seleção
   function handleBack() {
     setSelectedFolder(null);
-  }
+    setPhotos([]);
+  };
 
   return (
     <AppLayout fullWidth={true}>
@@ -98,32 +75,44 @@ export default function Gallery() {
                   Suas Sessões Fotográficas
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {folders.map((folder) => (
-                    <div
-                      key={folder.id}
-                      className="group bg-white/90 backdrop-blur-sm shadow-lg rounded-2xl p-6 cursor-pointer hover-lift transition-all duration-300 border border-gray-100"
-                      onClick={() => handleSelectFolder(folder)}
-                    >
-                      <div className="flex items-center justify-between mb-4">
-                        <span className="text-3xl">📁</span>
-                        <span className="bg-indigo-100 text-indigo-600 px-3 py-1 rounded-full text-sm font-medium">
-                          {folder.photos.length} fotos
-                        </span>
-                      </div>
-                      <h3 className="text-lg font-semibold text-gray-800 mb-2 group-hover:text-indigo-600 transition-colors">
-                        {folder.name}
+                  {folders.length === 0 ? (
+                    <div className="col-span-full text-center py-12">
+                      <div className="text-6xl mb-4">📁</div>
+                      <h3 className="text-xl font-semibold text-gray-600 mb-2">
+                        Nenhuma pasta encontrada
                       </h3>
-                      <p className="text-sm text-gray-600">
-                        Clique para visualizar as fotos
+                      <p className="text-gray-500">
+                        Suas pastas de fotos aparecerão aqui quando forem criadas.
                       </p>
-                      <div className="mt-4 flex items-center text-indigo-600 text-sm font-medium">
-                        Abrir pasta
-                        <span className="ml-2 transform group-hover:translate-x-1 transition-transform">
-                          →
-                        </span>
-                      </div>
                     </div>
-                  ))}
+                  ) : (
+                    folders.map((folder) => (
+                      <div
+                        key={folder.id}
+                        className="group bg-white/90 backdrop-blur-sm shadow-lg rounded-2xl p-6 cursor-pointer hover-lift transition-all duration-300 border border-gray-100"
+                        onClick={() => handleSelectFolder(folder)}
+                      >
+                        <div className="flex items-center justify-between mb-4">
+                          <span className="text-3xl">📁</span>
+                          <span className="bg-indigo-100 text-indigo-600 px-3 py-1 rounded-full text-sm font-medium">
+                            {folder.photoCount || 0} fotos
+                          </span>
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-800 mb-2 group-hover:text-indigo-600 transition-colors">
+                          {folder.name}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          {folder.description || 'Clique para visualizar as fotos'}
+                        </p>
+                        <div className="mt-4 flex items-center text-indigo-600 text-sm font-medium">
+                          Abrir pasta
+                          <span className="ml-2 transform group-hover:translate-x-1 transition-transform">
+                            →
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             ) : (
@@ -138,7 +127,7 @@ export default function Gallery() {
                     Voltar para pastas
                   </button>
                   <div className="text-sm text-gray-500">
-                    {selectedFolder.photos.length} fotos disponíveis
+                    {photos.length} fotos disponíveis
                   </div>
                 </div>
 
@@ -147,31 +136,53 @@ export default function Gallery() {
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                  {selectedFolder.photos.map((photo, idx) => (
-                    <div
-                      key={photo.id}
-                      className="bg-white rounded-2xl shadow-lg overflow-hidden hover-lift transition-all duration-300"
-                    >
-                      <div className="relative group">
-                        <img
-                          src={photo.url}
-                          alt="Foto com marca d'água"
-                          className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
-                        />
-                        {/* Marca d'água simulada */}
-                        <div className="absolute inset-0 bg-black/10 flex items-center justify-center pointer-events-none">
-                          <div className="text-white/70 text-sm font-bold bg-black/20 px-3 py-1 rounded backdrop-blur-sm">
-                            BRY Photos
+                  {photos.length === 0 ? (
+                    <div className="col-span-full text-center py-12">
+                      <div className="text-6xl mb-4">📷</div>
+                      <h3 className="text-xl font-semibold text-gray-600 mb-2">
+                        Nenhuma foto encontrada
+                      </h3>
+                      <p className="text-gray-500">
+                        Esta pasta ainda não possui fotos.
+                      </p>
+                    </div>
+                  ) : (
+                    photos.map((photo) => (
+                      <div
+                        key={photo.id}
+                        className="bg-white rounded-2xl shadow-lg overflow-hidden hover-lift transition-all duration-300"
+                      >
+                        <div className="relative group">
+                          <img
+                            src={photo.thumbnailUrl || photo.imageUrl}
+                            alt={photo.title || 'Foto'}
+                            className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
+                          />
+                          {/* Marca d'água */}
+                          <div className="absolute inset-0 bg-black/10 flex items-center justify-center pointer-events-none">
+                            <div className="text-white/70 text-sm font-bold bg-black/20 px-3 py-1 rounded backdrop-blur-sm">
+                              BRY Photos
+                            </div>
                           </div>
                         </div>
+                        <div className="p-4">
+                          <div className="mb-2">
+                            <h4 className="font-semibold text-gray-800 text-sm">
+                              {photo.title || `Foto ${photo.id}`}
+                            </h4>
+                            {photo.price && (
+                              <p className="text-green-600 font-bold">
+                                R$ {photo.price.toFixed(2)}
+                              </p>
+                            )}
+                          </div>
+                          <button className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-xl hover-lift font-semibold transition-all duration-300 hover:from-green-600 hover:to-green-700">
+                            💳 Comprar Esta Foto
+                          </button>
+                        </div>
                       </div>
-                      <div className="p-4">
-                        <button className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-xl hover-lift font-semibold transition-all duration-300 hover:from-green-600 hover:to-green-700">
-                          💳 Comprar Esta Foto
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
 
                 {/* Botão para comprar todas */}
