@@ -16,8 +16,10 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('access_token');
+    console.log('API Interceptor: Token encontrado no localStorage:', token ? token.substring(0, 50) + '...' : 'NENHUM');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log('API Interceptor: Header Authorization adicionado:', `Bearer ${token.substring(0, 50)}...`);
     }
     return config;
   },
@@ -36,10 +38,11 @@ api.interceptors.response.use(
       // Erro do servidor (status 4xx, 5xx)
       const message = error.response.data?.message || 'Erro do servidor';
       
-      // Se token expirou, limpar storage e redirecionar
-      if (error.response.status === 401) {
+      // Se token expirou e não estamos na página de login, limpar storage e redirecionar
+      if (error.response.status === 401 && window.location.pathname !== '/login') {
+        console.log('API Interceptor: Token inválido, deveria redirecionar');
         localStorage.removeItem('access_token');
-        window.location.href = '/login';
+        // window.location.href = '/login?redirected=true'; // COMENTADO para debug
       }
       
       throw new Error(message);
@@ -56,8 +59,15 @@ api.interceptors.response.use(
 // Serviços de autenticação
 export const authService = {
   async login(email, password) {
-    const response = await api.post('/auth/login', { email, password });
-    return response;
+    console.log('API Service: Enviando requisição de login para:', email);
+    try {
+      const response = await api.post('/auth/login', { email, password });
+      console.log('API Service: Resposta recebida:', response);
+      return response;
+    } catch (error) {
+      console.error('API Service: Erro na requisição de login:', error);
+      throw error;
+    }
   },
 
   async register(userData) {
@@ -66,8 +76,15 @@ export const authService = {
   },
 
   async profile() {
-    const response = await api.get('/users/profile');
-    return response;
+    console.log('API Service: Fazendo requisição para /users/profile');
+    try {
+      const response = await api.get('/users/profile');
+      console.log('API Service: Resposta do perfil:', response);
+      return response;
+    } catch (error) {
+      console.error('API Service: Erro na requisição do perfil:', error);
+      throw error;
+    }
   }
 };
 

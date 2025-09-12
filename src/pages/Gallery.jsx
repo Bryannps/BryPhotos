@@ -22,19 +22,40 @@ export default function Gallery() {
 
   const loadFolders = async () => {
     try {
+      console.log('Gallery: Carregando folders...');
       const data = await withLoading(() => folderService.getFolders());
-      setFolders(data);
+      console.log('Gallery: Dados recebidos de folderService.getFolders():', data);
+      console.log('Gallery: Tipo de dados:', typeof data, 'É array?', Array.isArray(data));
+      
+      // Verificar se os dados estão encapsulados na ResponseInterceptor
+      const folders = data?.data || data;
+      console.log('Gallery: Folders extraídos:', folders);
+      console.log('Gallery: Folders é array?', Array.isArray(folders));
+      
+      setFolders(Array.isArray(folders) ? folders : []);
     } catch (error) {
+      console.error('Gallery: Erro ao carregar pastas:', error);
       showError('Erro ao carregar pastas: ' + error.message);
+      setFolders([]); // Garantir que folders seja sempre um array
     }
   };
 
   const loadPhotos = async (folderId = null) => {
     try {
+      console.log('Gallery: Carregando fotos para folderId:', folderId);
       const data = await withLoading(() => photoService.getPhotos(folderId));
-      setPhotos(data);
+      console.log('Gallery: Dados recebidos de photoService.getPhotos():', data);
+      
+      // Verificar se os dados estão encapsulados na ResponseInterceptor
+      const photos = data?.data || data;
+      console.log('Gallery: Photos extraídos:', photos);
+      console.log('Gallery: Photos é array?', Array.isArray(photos));
+      
+      setPhotos(Array.isArray(photos) ? photos : []);
     } catch (error) {
+      console.error('Gallery: Erro ao carregar fotos:', error);
       showError('Erro ao carregar fotos: ' + error.message);
+      setPhotos([]); // Garantir que photos seja sempre um array
     }
   };
 
@@ -75,7 +96,7 @@ export default function Gallery() {
                   Suas Sessões Fotográficas
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {folders.length === 0 ? (
+                  {!Array.isArray(folders) || folders.length === 0 ? (
                     <div className="col-span-full text-center py-12">
                       <div className="text-6xl mb-4">📁</div>
                       <h3 className="text-xl font-semibold text-gray-600 mb-2">
@@ -136,7 +157,7 @@ export default function Gallery() {
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                  {photos.length === 0 ? (
+                  {!Array.isArray(photos) || photos.length === 0 ? (
                     <div className="col-span-full text-center py-12">
                       <div className="text-6xl mb-4">📷</div>
                       <h3 className="text-xl font-semibold text-gray-600 mb-2">

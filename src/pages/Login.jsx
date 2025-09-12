@@ -6,6 +6,7 @@ import { useApp } from "../contexts/AppContext";
 
 // Componente do formulário de Login
 function LoginForm() {
+  console.log('=== LoginForm: Componente inicializado ===');
   const { login, loading } = useAuth();
   const { showError, showSuccess } = useApp();
   const navigate = useNavigate();
@@ -14,13 +15,19 @@ function LoginForm() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    console.log('Tentando fazer login com:', { email, password: '***' });
+    console.log('=== LoginForm: handleSubmit chamado ===');
+    console.log('LoginForm: Tentando fazer login com:', { email, password: '***' });
+    
     try {
-      await login(email, password);
+      console.log('LoginForm: Chamando função login...');
+      const result = await login(email, password);
+      console.log('LoginForm: Login concluído:', result);
+      
       showSuccess("Login realizado com sucesso!");
       navigate("/gallery");
+      console.log('LoginForm: Login bem-sucedido, redirecionando para gallery');
     } catch (err) {
-      console.error('Erro no login:', err);
+      console.error('LoginForm: Erro no login:', err);
       showError(err.message || "E-mail ou senha inválidos");
     }
   }
